@@ -9,8 +9,15 @@ app.use(express.static('build'))
 app.use(express.json())
 app.use(cors())
 
-// morgan.token('body', (req, res) => JSON.stringify(req.body));
-// app.use(morgan(':method :url :status :response-time ms - :body'));
+const requestLogger = (request, response, next) => {
+   console.log('Method:', request.method)
+   console.log('Path:  ', request.path)
+   console.log('Body:  ', request.body)
+   console.log('---')
+   next()
+ }
+ 
+ app.use(requestLogger)
 
 // let persons = [
 //    {
@@ -53,6 +60,7 @@ app.get('/api/persons', (request, response) => {
    Person.find({}).then(persons => {
       response.json(persons)
    })
+   .catch(error => next(error))
 })
 
 // app.get('/api/info', (request, response) => {
@@ -71,37 +79,47 @@ Person.findById(request.params.id)
       response.status(404).end()
       }
    })
-   .catch(error => {
-      console.log("WAT IS THIS")
-      next(error)
-   })
+   .catch(error => next(error))
 })
-
-//  app.delete('/api/persons/:id', (request, response, next) => {
-//    Person.findByIdAndRemove(request.params.id)
-//      .then(result => {
-//        response.status(204).end()
-//      })
-//      .catch(error => next(error))
-//  })
 
 app.post('/api/persons', (request, response) => {
-const body = request.body
+   const body = request.body
+   if (body.name === undefined || body.number === undefined) {
+      return response.status(400).json({ error: 'name or number missing' })
+   } else {
+      const person = new Person({
+         name: body.name,
+         number: body.number
+      })
+      person.save().then(savedPerson =>{
+         response.json(savedPerson)
+      })
+   }
+})
 
-if (body.name === undefined || body.number === undefined) {
-   return response.status(400).json({ error: 'name or number missing' })
+app.delete('/api/persons/:id', (request, response) => {
+   Person.findByIdAndRemove(request.params.id)
+     .then(result => {
+       response.status(204).end()
+     })
+     .catch(error => next(error))
+})
+
+
+const unknownEndpoint = (request, response) => {
+   response.status(404).send({ error: 'unknown endpoint' })
+ }
+
+const errorHandler = (error, request, response, next) => {
+   console.error(error.message)
+   if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'malformatted id' })
+   } 
+   next(error)
 }
 
-const person = new Person({
-   name: body.name,
-   number: body.number
-})
-
-person.save().then(savedPerson => {
-   response.json(savedPerson)
-   })
-})
-
+app.use(unknownEndpoint)
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
