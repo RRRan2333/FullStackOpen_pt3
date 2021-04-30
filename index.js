@@ -63,21 +63,37 @@ app.get('/api/persons', (request, response) => {
    .catch(error => next(error))
 })
 
-// app.get('/api/info', (request, response) => {
-//    response.send(
-//       `<p>Phonebook has info for ${persons.length} people</p>
-//       <p>${new Date()}</p>`
-//    )
-// })
+app.get('/api/info', (request, response) => {
+   Person.find({}).then(persons => {
+      response.send(
+         `<p>Phonebook has info for ${persons.length} people</p>
+         <p>${new Date()}</p>`
+      )
+   })
+   
+})
 
 app.get('/api/persons/:id', (request, response, next) => {
-Person.findById(request.params.id)
+   Person.findById(request.params.id)
    .then(person => {
       if (person) {
       response.json(person)
       } else {
       response.status(404).end()
       }
+   })
+   .catch(error => next(error))
+})
+
+app.put('/api/persons/:id', (request, response, next) => {
+   const body = request.body
+   const person = {
+      name: body.name,
+      number: body.number
+   }
+   Person.findByIdAndUpdate(request.params.id, person, {new: true})
+   .then(returnedPerson => {
+      response.status(200).json(returnedPerson)
    })
    .catch(error => next(error))
 })
