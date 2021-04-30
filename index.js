@@ -11,7 +11,7 @@ app.use(cors())
 
 const requestLogger = (request, response, next) => {
    console.log('Method:', request.method)
-   console.log('Path:  ', request.path)
+   console.log('Path:  ' , request.path)
    console.log('Body:  ', request.body)
    console.log('---')
    next()
@@ -46,7 +46,7 @@ app.get('/', (request, response) => {
    response.send('<h1>Hello World!</h1>')
 })
 
-app.get('/api/persons', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
    Person.find({}).then(persons => {
       response.json(persons)
    })
@@ -104,7 +104,7 @@ app.post('/api/persons', (request, response, next) => {
    }
 })
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
    Person.findByIdAndRemove(request.params.id)
      .then(result => {
        response.status(204).end()
